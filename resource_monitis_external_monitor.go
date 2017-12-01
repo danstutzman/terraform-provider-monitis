@@ -19,6 +19,26 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
+			"tag": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"location_ids": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"url": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"type": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"interval": &schema.Schema{
+				Type:     schema.TypeInt,
+				Required: true,
+			},
 		},
 	}
 }
@@ -28,6 +48,21 @@ func convertDataToOptions(d *schema.ResourceData) *monitis.AddExternalMonitorOpt
 
 	if name, ok := d.Get("name").(string); ok {
 		opts.Name = monitis.String(name)
+	}
+	if tag, ok := d.Get("tag").(string); ok {
+		opts.Tag = monitis.String(tag)
+	}
+	if location_ids, ok := d.Get("location_ids").(string); ok {
+		opts.LocationIds = monitis.String(location_ids)
+	}
+	if url, ok := d.Get("url").(string); ok {
+		opts.Url = monitis.String(url)
+	}
+	if type_, ok := d.Get("type").(string); ok {
+		opts.Type = monitis.String(type_)
+	}
+	if interval, ok := d.Get("interval").(int); ok {
+		opts.Interval = monitis.Int(interval)
 	}
 
 	return &opts
