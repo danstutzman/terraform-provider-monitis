@@ -23,6 +23,9 @@ func Provider() *schema.Provider {
 				Sensitive:   true,
 			},
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"monitis_external_location": data_source_monitis_external_location(),
+		},
 		ResourcesMap: map[string]*schema.Resource{
 			"monitis_external_monitor": resource_monitis_external_monitor(),
 		},
