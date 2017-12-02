@@ -37,7 +37,10 @@ data "monitis_external_location" "us-wst" {
 resource "monitis_external_monitor" "www-example-com" {
   name         = "www.example.com"
   tag          = "Default"
-  location_ids = "${data.monitis_external_location.us-est.id},${data.monitis_external_location.us-wst.id}"
+  location_ids = [
+    "${data.monitis_external_location.us-est.id}",
+    "${data.monitis_external_location.us-wst.id}"
+  ]
   url          = "www.example.com"
   type         = "http"
   interval     = 15

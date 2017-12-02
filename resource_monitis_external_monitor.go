@@ -43,8 +43,9 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Required: true,
 			},
 			"location_ids": &schema.Schema{
-				Type:     schema.TypeString,
+				Type:     schema.TypeList,
 				Required: true,
+				Elem:     &schema.Schema{Type: schema.TypeInt},
 			},
 			"timeout": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -139,9 +140,6 @@ func convertDataToAddOptions(d *schema.ResourceData) *monitis.AddExternalMonitor
 	if url, ok := d.GetOk("url"); ok {
 		opts.Url = monitis.String(url.(string))
 	}
-	if location_ids, ok := d.GetOk("location_ids"); ok {
-		opts.LocationIds = monitis.String(location_ids.(string))
-	}
 	if timeout, ok := d.GetOk("timeout"); ok {
 		opts.Timeout = monitis.Int(timeout.(int))
 	}
@@ -196,6 +194,12 @@ func convertDataToAddOptions(d *schema.ResourceData) *monitis.AddExternalMonitor
 	if is_ipv6, ok := d.GetOk("is_ipv6"); ok {
 		opts.IsIpv6 = monitis.BoolToInt(is_ipv6.(bool))
 	}
+
+	location_ids := make([]string, d.Get("location_ids.#").(int))
+	for i, location_id := range d.Get("location_ids").([]interface{}) {
+		location_ids[i] = strconv.Itoa(location_id.(int))
+	}
+	opts.LocationIds = monitis.String(strings.Join(location_ids, ","))
 
 	return &opts
 }
@@ -264,12 +268,10 @@ func convertDataToEditOptions(d *schema.ResourceData) *monitis.EditExternalMonit
 		opts.IsIpv6 = monitis.BoolToInt(is_ipv6.(bool))
 	}
 
-	locationIdIntervalPairs := []string{}
-	location_ids := d.Get("location_ids").(string)
+	locationIdIntervalPairs := make([]string, d.Get("location_ids.#").(int))
 	interval := d.Get("interval").(int)
-	for _, location_id := range strings.Split(location_ids, ",") {
-		locationIdIntervalPairs = append(locationIdIntervalPairs,
-			fmt.Sprintf("%s-%d", location_id, interval))
+	for i, location_id := range d.Get("location_ids").([]interface{}) {
+		locationIdIntervalPairs[i] = fmt.Sprintf("%d-%d", location_id, interval)
 	}
 	opts.LocationIdIntervalPairs =
 		monitis.String(strings.Join(locationIdIntervalPairs, ","))
