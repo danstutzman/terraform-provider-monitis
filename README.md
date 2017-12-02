@@ -13,7 +13,7 @@
 ## Supported features
 
 * Authenticate to Monitis with `api_key` and `secret_key`
-* Create and delete `monitis_external_monitor`
+* Create, update, and delete `monitis_external_monitor`
 
 ## Example usage
 

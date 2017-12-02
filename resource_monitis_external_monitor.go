@@ -5,7 +5,18 @@ import (
 	"github.com/danielstutzman/go-monitis"
 	"github.com/hashicorp/terraform/helper/schema"
 	"strconv"
+	"strings"
 )
+
+var UNCHANGEABLE_FIELDS = []string{
+	"type",
+	"detailed_test_type",
+	"over_ssl",
+	"post_data",
+	"params",
+	"basic_auth_user",
+	"basic_auth_pass",
+}
 
 func resource_monitis_external_monitor() *schema.Resource {
 	return &schema.Resource{
@@ -15,15 +26,15 @@ func resource_monitis_external_monitor() *schema.Resource {
 		Delete: resource_monitis_external_monitor_delete,
 
 		Schema: map[string]*schema.Schema{
+			"type": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"detailed_test_type": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
 			"name": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"tag": &schema.Schema{
-				Type:     schema.TypeString,
-				Required: true,
-			},
-			"location_ids": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -31,7 +42,15 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"type": &schema.Schema{
+			"location_ids": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"timeout": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"tag": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
 			},
@@ -39,30 +58,143 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
+			"over_ssl": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"post_data": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"content_match_string": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"content_match_flag": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"params": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"uptime_sla": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"response_sla": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"basic_auth_user": &schema.Schema{
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"basic_auth_pass": &schema.Schema{
+				Type:      schema.TypeString,
+				Optional:  true,
+				Sensitive: true,
+			},
+			"header": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"sni": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"is_version_1_1": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
+			"user_agent": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"order_id": &schema.Schema{
+				Type:     schema.TypeInt,
+				Optional: true,
+			},
+			"is_ipv6": &schema.Schema{
+				Type:     schema.TypeBool,
+				Optional: true,
+			},
 		},
 	}
 }
 
-func convertDataToOptions(d *schema.ResourceData) *monitis.AddExternalMonitorOptions {
+func convertDataToAddOptions(d *schema.ResourceData) *monitis.AddExternalMonitorOptions {
 	opts := monitis.AddExternalMonitorOptions{}
 
-	if name, ok := d.Get("name").(string); ok {
-		opts.Name = monitis.String(name)
+	if type_, ok := d.GetOk("type"); ok {
+		opts.Type = monitis.String(type_.(string))
 	}
-	if tag, ok := d.Get("tag").(string); ok {
-		opts.Tag = monitis.String(tag)
+	if detailed_test_type, ok := d.GetOk("detailed_test_type"); ok {
+		opts.DetailedTestType = monitis.Int(detailed_test_type.(int))
 	}
-	if location_ids, ok := d.Get("location_ids").(string); ok {
-		opts.LocationIds = monitis.String(location_ids)
+	if name, ok := d.GetOk("name"); ok {
+		opts.Name = monitis.String(name.(string))
 	}
-	if url, ok := d.Get("url").(string); ok {
-		opts.Url = monitis.String(url)
+	if url, ok := d.GetOk("url"); ok {
+		opts.Url = monitis.String(url.(string))
 	}
-	if type_, ok := d.Get("type").(string); ok {
-		opts.Type = monitis.String(type_)
+	if location_ids, ok := d.GetOk("location_ids"); ok {
+		opts.LocationIds = monitis.String(location_ids.(string))
 	}
-	if interval, ok := d.Get("interval").(int); ok {
-		opts.Interval = monitis.Int(interval)
+	if timeout, ok := d.GetOk("timeout"); ok {
+		opts.Timeout = monitis.Int(timeout.(int))
+	}
+	if tag, ok := d.GetOk("tag"); ok {
+		opts.Tag = monitis.String(tag.(string))
+	}
+	if interval, ok := d.GetOk("interval"); ok {
+		opts.Interval = monitis.Int(interval.(int))
+	}
+	if over_ssl, ok := d.GetOk("over_ssl"); ok {
+		opts.OverSsl = monitis.BoolToInt(over_ssl.(bool))
+	}
+	if post_data, ok := d.GetOk("post_data"); ok {
+		opts.PostData = monitis.String(post_data.(string))
+	}
+	if content_match_string, ok := d.GetOk("content_match_string"); ok {
+		opts.ContentMatchString = monitis.String(content_match_string.(string))
+	}
+	if content_match_flag, ok := d.GetOk("content_match_flag"); ok {
+		opts.ContentMatchFlag = monitis.Int(content_match_flag.(int))
+	}
+	if params, ok := d.GetOk("params"); ok {
+		opts.Params = monitis.String(params.(string))
+	}
+	if uptime_sla, ok := d.GetOk("uptime_sla"); ok {
+		opts.UptimeSla = monitis.Int(uptime_sla.(int))
+	}
+	if response_sla, ok := d.GetOk("response_sla"); ok {
+		opts.ResponseSla = monitis.Int(response_sla.(int))
+	}
+	if basic_auth_user, ok := d.GetOk("basic_auth_user"); ok {
+		opts.BasicAuthUser = monitis.String(basic_auth_user.(string))
+	}
+	if basic_auth_pass, ok := d.GetOk("basic_auth_pass"); ok {
+		opts.BasicAuthPass = monitis.String(basic_auth_pass.(string))
+	}
+	if header, ok := d.GetOk("header"); ok {
+		opts.Header = monitis.String(header.(string))
+	}
+	if sni, ok := d.GetOk("sni"); ok {
+		opts.Sni = monitis.BoolToInt(sni.(bool))
+	}
+	if is_version_1_1, ok := d.GetOk("is_version_1_1"); ok {
+		opts.IsVersion_1_1 = monitis.BoolToInt(is_version_1_1.(bool))
+	}
+	if user_agent, ok := d.GetOk("user_agent"); ok {
+		opts.UserAgent = monitis.String(user_agent.(string))
+	}
+	if order_id, ok := d.GetOk("order_id"); ok {
+		opts.OrderId = monitis.Int(order_id.(int))
+	}
+	if is_ipv6, ok := d.GetOk("is_ipv6"); ok {
+		opts.IsIpv6 = monitis.BoolToInt(is_ipv6.(bool))
 	}
 
 	return &opts
@@ -70,7 +202,7 @@ func convertDataToOptions(d *schema.ResourceData) *monitis.AddExternalMonitorOpt
 
 func resource_monitis_external_monitor_create(d *schema.ResourceData, m interface{}) error {
 	auth := m.(*monitis.Auth)
-	opts := convertDataToOptions(d)
+	opts := convertDataToAddOptions(d)
 
 	monitorData, err := auth.AddExternalMonitor(opts)
 	if err != nil {
@@ -86,7 +218,84 @@ func resource_monitis_external_monitor_read(d *schema.ResourceData, m interface{
 	return nil
 }
 
+func convertDataToEditOptions(d *schema.ResourceData) *monitis.EditExternalMonitorOptions {
+	opts := monitis.EditExternalMonitorOptions{}
+
+	if name, ok := d.GetOk("name"); ok {
+		opts.Name = monitis.String(name.(string))
+	}
+	if url, ok := d.GetOk("url"); ok {
+		opts.Url = monitis.String(url.(string))
+	}
+	if timeout, ok := d.GetOk("timeout"); ok {
+		opts.Timeout = monitis.Int(timeout.(int))
+	}
+	if tag, ok := d.GetOk("tag"); ok {
+		opts.Tag = monitis.String(tag.(string))
+	}
+	if content_match_string, ok := d.GetOk("content_match_string"); ok {
+		opts.ContentMatchString = monitis.String(content_match_string.(string))
+	}
+	if content_match_flag, ok := d.GetOk("content_match_flag"); ok {
+		opts.ContentMatchFlag = monitis.Int(content_match_flag.(int))
+	}
+	if uptime_sla, ok := d.GetOk("uptime_sla"); ok {
+		opts.UptimeSla = monitis.Int(uptime_sla.(int))
+	}
+	if response_sla, ok := d.GetOk("response_sla"); ok {
+		opts.ResponseSla = monitis.Int(response_sla.(int))
+	}
+	if header, ok := d.GetOk("header"); ok {
+		opts.Header = monitis.String(header.(string))
+	}
+	if sni, ok := d.GetOk("sni"); ok {
+		opts.Sni = monitis.BoolToInt(sni.(bool))
+	}
+	if is_version_1_1, ok := d.GetOk("is_version_1_1"); ok {
+		opts.IsVersion_1_1 = monitis.BoolToInt(is_version_1_1.(bool))
+	}
+	if user_agent, ok := d.GetOk("user_agent"); ok {
+		opts.UserAgent = monitis.String(user_agent.(string))
+	}
+	if order_id, ok := d.GetOk("order_id"); ok {
+		opts.OrderId = monitis.Int(order_id.(int))
+	}
+	if is_ipv6, ok := d.GetOk("is_ipv6"); ok {
+		opts.IsIpv6 = monitis.BoolToInt(is_ipv6.(bool))
+	}
+
+	locationIdIntervalPairs := []string{}
+	location_ids := d.Get("location_ids").(string)
+	interval := d.Get("interval").(int)
+	for _, location_id := range strings.Split(location_ids, ",") {
+		locationIdIntervalPairs = append(locationIdIntervalPairs,
+			fmt.Sprintf("%s-%d", location_id, interval))
+	}
+	opts.LocationIdIntervalPairs =
+		monitis.String(strings.Join(locationIdIntervalPairs, ","))
+
+	return &opts
+}
+
 func resource_monitis_external_monitor_update(d *schema.ResourceData, m interface{}) error {
+
+	for _, fieldName := range UNCHANGEABLE_FIELDS {
+		if d.HasChange(fieldName) {
+			return fmt.Errorf(
+				"Can't change %s to %s; have to delete and recreate",
+				fieldName, d.Get(fieldName).(string))
+		}
+	}
+
+	auth := m.(*monitis.Auth)
+	testId := d.Id()
+	opts := convertDataToEditOptions(d)
+
+	err := auth.EditExternalMonitor(testId, opts)
+	if err != nil {
+		return fmt.Errorf("Error from EditExternalMonitor: %s", err)
+	}
+
 	return nil
 }
 
