@@ -8,16 +8,6 @@ import (
 	"strings"
 )
 
-var UNCHANGEABLE_FIELDS = []string{
-	"type",
-	"detailed_test_type",
-	"over_ssl",
-	"post_data",
-	"params",
-	"basic_auth_user",
-	"basic_auth_pass",
-}
-
 func resource_monitis_external_monitor() *schema.Resource {
 	return &schema.Resource{
 		Create: resource_monitis_external_monitor_create,
@@ -29,10 +19,12 @@ func resource_monitis_external_monitor() *schema.Resource {
 			"type": &schema.Schema{
 				Type:     schema.TypeString,
 				Required: true,
+				ForceNew: true,
 			},
 			"detailed_test_type": &schema.Schema{
 				Type:     schema.TypeInt,
 				Optional: true,
+				ForceNew: true,
 			},
 			"name": &schema.Schema{
 				Type:     schema.TypeString,
@@ -62,10 +54,12 @@ func resource_monitis_external_monitor() *schema.Resource {
 			"over_ssl": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
+				ForceNew: true,
 			},
 			"post_data": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"content_match_string": &schema.Schema{
 				Type:     schema.TypeString,
@@ -78,6 +72,7 @@ func resource_monitis_external_monitor() *schema.Resource {
 			"params": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
+				ForceNew: true,
 			},
 			"uptime_sla": &schema.Schema{
 				Type:     schema.TypeInt,
@@ -91,11 +86,13 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+				ForceNew:  true,
 			},
 			"basic_auth_pass": &schema.Schema{
 				Type:      schema.TypeString,
 				Optional:  true,
 				Sensitive: true,
+				ForceNew:  true,
 			},
 			"header": &schema.Schema{
 				Type:     schema.TypeString,
@@ -280,14 +277,6 @@ func convertDataToEditOptions(d *schema.ResourceData) *monitis.EditExternalMonit
 }
 
 func resource_monitis_external_monitor_update(d *schema.ResourceData, m interface{}) error {
-
-	for _, fieldName := range UNCHANGEABLE_FIELDS {
-		if d.HasChange(fieldName) {
-			return fmt.Errorf(
-				"Can't change %s to %s; have to delete and recreate",
-				fieldName, d.Get(fieldName).(string))
-		}
-	}
 
 	auth := m.(*monitis.Auth)
 	testId := d.Id()
