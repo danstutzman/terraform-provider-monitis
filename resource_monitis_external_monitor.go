@@ -14,6 +14,9 @@ func resource_monitis_external_monitor() *schema.Resource {
 		Read:   resource_monitis_external_monitor_read,
 		Update: resource_monitis_external_monitor_update,
 		Delete: resource_monitis_external_monitor_delete,
+		Importer: &schema.ResourceImporter{
+			State: resource_monitis_external_monitor_import,
+		},
 
 		Schema: map[string]*schema.Schema{
 			"type": &schema.Schema{
@@ -119,6 +122,10 @@ func resource_monitis_external_monitor() *schema.Resource {
 				Type:     schema.TypeBool,
 				Optional: true,
 			},
+			"start_date": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 		},
 	}
 }
@@ -216,7 +223,75 @@ func resource_monitis_external_monitor_create(d *schema.ResourceData, m interfac
 	return err
 }
 
-func resource_monitis_external_monitor_read(d *schema.ResourceData, m interface{}) error {
+func resource_monitis_external_monitor_read(data *schema.ResourceData,
+	meta interface{}) error {
+
+	auth := meta.(*monitis.Auth)
+
+	testId := data.Id()
+	info, err := auth.GetExternalMonitorInfo(testId, nil)
+	if err != nil {
+		return fmt.Errorf("Error from GetExternalMonitorInfo: %s", err)
+	}
+
+	locationIds := []int{}
+	var checkInterval int
+	for _, location := range info.Locations {
+		locationIds = append(locationIds, location.Id)
+		if checkInterval == 0 {
+			checkInterval = location.CheckInterval
+		} else if checkInterval != location.CheckInterval {
+			return fmt.Errorf("Inconsistent CheckIntervals: %d and %d",
+				checkInterval, location.CheckInterval)
+		}
+	}
+
+	params := []string{}
+	var user_agent string
+	var is_ipv6 bool
+	var is_version_1_1 bool
+	var ssl_version string
+	var header string
+	var sni bool
+	for paramName, paramValue := range info.Params {
+		if paramName == "useragent" {
+			user_agent = paramValue.(string)
+		} else if paramName == "isIPv6" {
+			is_ipv6 = (paramValue.(string) == "1")
+		} else if paramName == "isversion_1_1" {
+			is_version_1_1 = (paramValue.(string) == "1")
+		} else if paramName == "sslVersion" {
+			ssl_version = paramValue.(string)
+		} else if paramName == "header" {
+			header = paramValue.(string)
+		} else if paramName == "sni" {
+			sni = (paramValue.(string) == "1")
+		} else {
+			params = append(params, fmt.Sprintf("%s=%s", paramName, paramValue))
+		}
+	}
+
+	data.Set("timeout", info.Timeout)
+	data.Set("start_date", info.StartDateParsed)
+	data.Set("type", info.Type)
+	data.Set("post_data", info.PostData)
+	data.Set("content_match_string", info.MatchText)
+	data.Set("content_match_flag", info.Match)
+	data.Set("params", strings.Join(params, "&"))
+	data.Set("tag", info.Tag)
+	data.Set("detailed_test_type", info.DetailedType)
+	data.Set("url", info.Url)
+	data.Set("name", info.Name)
+	data.Set("location_ids", locationIds)
+	data.Set("interval", checkInterval)
+	data.Set("user_agent", user_agent)
+	data.Set("is_ipv6", is_ipv6)
+	data.Set("is_version_1_1", is_version_1_1)
+	data.Set("header", header)
+	data.Set("sni", sni)
+	_ = ssl_version
+	// TODO: groups, isSuspended, isPhmon, sslVersion
+
 	return nil
 }
 
@@ -298,4 +373,13 @@ func resource_monitis_external_monitor_delete(d *schema.ResourceData, m interfac
 	err := auth.DeleteExternalMonitors(testId, nil)
 
 	return err
+}
+
+func resource_monitis_external_monitor_import(data *schema.ResourceData,
+	meta interface{}) ([]*schema.ResourceData, error) {
+
+	if err := resource_monitis_external_monitor_read(data, meta); err != nil {
+		return nil, err
+	}
+	return []*schema.ResourceData{data}, nil
 }
