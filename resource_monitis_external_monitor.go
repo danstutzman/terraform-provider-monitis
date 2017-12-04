@@ -105,6 +105,7 @@ func resource_monitis_external_monitor() *schema.Resource {
 			"is_version_1_1": &schema.Schema{
 				Type:     schema.TypeBool,
 				Optional: true,
+				Default:  true,
 			},
 			"user_agent": &schema.Schema{
 				Type:     schema.TypeString,
